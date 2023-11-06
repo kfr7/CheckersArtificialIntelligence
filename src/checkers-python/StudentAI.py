@@ -92,7 +92,7 @@ class StudentAI():
                     # do the move
                     # print(depth, "going to do move", all_possible_values_from_here[i][j])
                     self.board.make_move(all_possible_values_from_here[i][j], self.opponent[self.color])
-                    value, _ = self.min_value(depth + 1, max_depth)
+                    value, _ = self.max_value(depth + 1, max_depth)
                     # then undo the move
                     self.board.undo()
                     # print(depth, "undid the move", all_possible_values_from_here[i][j])
