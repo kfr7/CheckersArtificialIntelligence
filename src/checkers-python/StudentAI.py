@@ -225,7 +225,8 @@ class StudentAI():
         i = random.randint(0, len(all_possible_moves)-1)
         j = random.randint(0, len(all_possible_moves[i])-1)
         return [i, j]
-        # else:
+        # else: # was too biased towards the move with the highest score and treated
+        #       # all other moves the same even though some may have been better than others
         #     # exploitation: choose the move with the highest score (just uses board score)
         #     best_move = None
         #     best_score = -float("inf")
