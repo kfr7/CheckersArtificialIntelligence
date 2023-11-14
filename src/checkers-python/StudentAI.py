@@ -40,6 +40,105 @@ class StudentAI():
         self.board.make_move(move,self.color)
         return move
 
+
+
+
+    def select_from_mcts(self):
+        root_state = {
+            'board': self.board.copy(),
+            'untried_moves': self.board.get_all_possible_moves(self.color),
+            'all_possible_moves': self.board.get_all_possible_moves(self.color),
+            'visits': 0,
+            'total_reward': 0
+        }
+
+        # Perform a limited number of MCTS iterations
+        for _ in range(1000):
+            self.mcts(root_state.copy())
+
+        # Choose the best move based on the statistics
+        best_move = self.choose_best_move(root_state)
+
+        return best_move
+
+    def mcts(self, state):
+        current_state = state.copy()
+
+        while not current_state['board'].is_terminal():
+            if not self.is_fully_expanded(current_state):
+                # Expand
+                move = self.select_untried_move(current_state)
+                current_state = self.apply_move(current_state, move)
+            else:
+                # Select based on UCT
+                move = self.select_ucb_move(current_state)
+                current_state = self.apply_move(current_state, move)
+
+        result = self.simulate(current_state)
+        self.backpropagate(state, result)
+
+    def is_fully_expanded(self, state):
+        return not state['untried_moves']
+
+    def select_untried_move(self, state):
+        untried_moves = state['untried_moves']
+        move = random.choice(untried_moves)
+        state['untried_moves'].remove(move)
+        return move
+
+    def select_ucb_move(self, state):
+        np = state['visits']
+        c = 1.4  # Exploration constant
+
+        def uct_formula(q, n):
+            if n == 0:
+                return float('inf')
+            return q / n + c * math.sqrt(math.log(np) / n)
+
+        moves = state['all_possible_moves']
+        uct_values = [uct_formula(move['total_reward'], move['visits']) for move in moves]
+        selected_move = moves[uct_values.index(max(uct_values))]
+        return selected_move
+
+    def apply_move(self, state, move):
+        new_state = state.copy()
+        new_state['board'].make_move(move, self.color)
+        new_state['untried_moves'].remove(move)
+        return new_state
+
+    def undo_move(self, state, move):
+        # Implement your logic to undo the move on the board
+        # This should revert the board to its state before the move
+        pass
+
+    def simulate(self, state):
+        current_state = state['board'].copy()
+
+        while not current_state.is_terminal():
+            legal_moves = current_state.get_all_possible_moves(self.color)
+            random_move = random.choice(legal_moves)
+            current_state.make_move(random_move, self.color)
+
+        return self.score(current_state)
+
+    def backpropagate(self, state, result):
+        while state is not None:
+            state['visits'] += 1
+            state['total_reward'] += result
+            state = None  # Update to parent state if you have a parent reference
+
+    def choose_best_move(self, state):
+        # Choose the best move based on the statistics
+        # Implement your own logic for choosing the best move
+        moves = state['all_possible_moves']
+        best_move = max(moves, key=lambda move: move['visits'])
+        return best_move
+
+
+
+
+
+
     def min_max(self, depth, max_depth):
         # print("Entered min max function")
         _, move_tuple = self.max_value(depth, max_depth)
