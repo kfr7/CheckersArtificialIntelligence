@@ -150,7 +150,7 @@ class StudentAI():
         # the number of simulations from each child node
         all_possible_moves = self.board.get_all_possible_moves(self.color)
         if len(all_possible_moves) == 1:
-            print("Only had one move so don't simulate")
+            # print("Only had one move so don't simulate")
             return all_possible_moves[0][0]
         # all_possible_simulations is a 2d array with variable length rows and i want to
         # initialize a 2 new 2d arrays with the same dimensions with
@@ -166,8 +166,6 @@ class StudentAI():
                 all_child_score[i].append(0)
         for i in range(NUMBER_OF_SIMULATIONS):
             simulate_start_move = self.rollout_policy()
-            print("COUNTS:", all_child_counts)
-            print("SCORES:", all_child_score)
             # print(i)
             # print(all_child_counts)
             # print(all_child_score)
