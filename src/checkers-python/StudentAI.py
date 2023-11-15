@@ -3,8 +3,11 @@ from BoardClasses import Move
 from BoardClasses import Board
 import math
 import random
+from copy import deepcopy
+from time import time
 #The following part should be completed by students.
 #Students can modify anything except the class name and exisiting functions and varibles.
+EXPLORATION_CONSTANT = 1.414
 class StudentAI():
 
     def __init__(self,col,row,p):
@@ -247,3 +250,44 @@ class StudentAI():
         if child_number_of_simulations == 0:
             return -float("inf")
         return ((average_score / child_number_of_simulations) + (EXPLORATION_CONSTANT * math.sqrt(math.log(parent_number_of_simulations) / child_number_of_simulations)))
+
+class TreeNode():
+    def __init__(self, board, color, move, parent):
+        self.board = deepcopy(board)
+        self.color = color
+        self.move = move
+        self.parent = parent
+        self.opponent = {1: 2, 2: 1}
+
+        self.Si = 1
+        self.Wi = 0
+        self.UCT_val = 0
+
+        if move is not None:
+            self.board.make_move(move, self.opponent[self.color])
+
+        #Key is move and value is TreeNode of child
+        self.children = dict()
+        #game is ongoing
+        if self.board.is_win(self.opponent[self.color]) == 0:
+            possible_moves = self.board.get_all_possible_moves()
+            for i in range(len(possible_moves)):
+                for j in range(len(possible_moves)):
+                    self.children[possible_moves[i][j]] = None
+
+    def backpropagation(self, win_for_parent):
+        #recursively update Si and Wi for this node and parent
+        #winForParent = 1 is win for parent, -1 is lose
+        self.Si += 1
+        # if it has parent
+        if self.parent is not None:
+            self.parent.backpropagation(-win_for_parent)
+
+            if win_for_parent == 1:
+                self.Wi += 1
+
+            self.UTC_val = self.uct_formula(self.Wi, self.Si, self.parent.Si)
+
+    def uct_formula(self, wi, si, sp):
+
+        return (wi / si) + EXPLORATION_CONSTANT * math.sqrt(math.log(sp) / si)
