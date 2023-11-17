@@ -101,9 +101,9 @@ class StudentAI():
             best_child = None
             highest_utc = 0
             for child in node.children.values():
-                if child.UTC_val >= highest_utc:
+                if child.utc_val >= highest_utc:
                     best_child = child
-                    highest_utc = child.UTC_val
+                    highest_utc = child.utc_val
             return self.selection(best_child)
         # if one of children is not explored
         else:
@@ -167,9 +167,9 @@ class StudentAI():
         best_move = None
         highest_si = 0
         for move, child in self.root.children.items():
-            if child.Si > highest_si:
+            if child.si > highest_si:
                 best_move = move
-                highest_si = child.Si
+                highest_si = child.si
         return best_move
 
     def rollout_policy(self, epsilon=0.2):
@@ -208,9 +208,9 @@ class TreeNode:
         self.parent = parent
         self.opponent = {1: 2, 2: 1}
 
-        self.Si = 1
-        self.Wi = 0
-        self.UCT_val = 0
+        self.si = 1
+        self.wi = 0
+        self.utc_val = 0
 
         if move is not None:
             self.board.make_move(move, self.opponent[self.color])
@@ -221,15 +221,15 @@ class TreeNode:
     def backpropagation(self, win_for_parent):
         # recursively update Si and Wi for this node and parent
         # winForParent = 1 is win for parent, -1 is lose
-        self.Si += 1
+        self.si += 1
         # if it has parent
         if self.parent is not None:
             self.parent.backpropagation(-win_for_parent)
 
             if win_for_parent == 1:
-                self.Wi += 1
+                self.wi += 1
 
-            self.UTC_val = self.uct_formula(self.Wi, self.Si, self.parent.Si)
+            self.utc_val = self.uct_formula(self.wi, self.si, self.parent.si)
 
     def uct_formula(self, wi, si, sp):
 
