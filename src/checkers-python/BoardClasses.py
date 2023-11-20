@@ -289,12 +289,12 @@ class Board:
             return -1
         W_has_move = True
         B_has_move = True
-        if len(self.get_all_possible_moves(1)) == 0:
-            if turn != 1:
-                B_has_move = False
-        elif len(self.get_all_possible_moves(2)) == 0:
-            if turn != 2:
-                W_has_move = False
+        if len(self.get_all_possible_moves(1)) == 0:    # if black does not have a move
+            if turn != 1:                               # and the turn is currently white's
+                B_has_move = False                      # white wins
+        elif len(self.get_all_possible_moves(2)) == 0:  # if white does not have a move
+            if turn != 2:                               # and the turn is currently black's
+                W_has_move = False                      # then black wins
 
         if W_has_move and not B_has_move:
             return 2
