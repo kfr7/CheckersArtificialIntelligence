@@ -88,7 +88,7 @@ class StudentAI():
             return white_score - black_score
 
     def select_from_mcts(self):
-        for i in range(100):
+        for i in range(250):
             after_selection = self.selection()
             after_expansion = self.expansion(after_selection)
             self.simulate(after_expansion)
@@ -119,18 +119,10 @@ class StudentAI():
         # If game is not ongoing, just return node
         if node.board.is_win(self.opponent[node.color]) != 0:
             return node
-
-        # if it is leaf node, then set its children as None with corresponding move key
-        if len(node.children) == 0:
-            possible_moves = node.board.get_all_possible_moves(node.color)
-            for i in range(len(possible_moves)):
-                for j in range(len(possible_moves[i])):
-                    node.children[str(possible_moves[i][j])] = None
-
-        # expand one of node
+        # expand node when we fild the child is None
         for move_str, child in node.children.items():
             move = Move.from_str(move_str)
-            if child is None:
+            if child is None:   # will always be a child that is None and if not, selection return leaf nodes with no children
                 temp_board = deepcopy(node.board)
                 temp_board.make_move(move, node.color)
                 node.children[move_str] = TreeNode(temp_board, self.opponent[node.color], node)
@@ -177,9 +169,6 @@ class StudentAI():
         best_move_str = None
         highest_win_rate = None
         for move_str, child in self.root.children.items():
-            if child is not None:
-                # print out the wins and also the total number of simulations for each move
-                print("move_str: " + move_str + " wi: " + str(child.wi) + " si: " + str(child.si))
             if child is not None and (highest_win_rate is None or child.wi / child.si > highest_win_rate):
                 best_move_str = move_str
                 highest_win_rate = child.wi / child.si
@@ -196,7 +185,17 @@ class TreeNode:
         self.si = 0 # doesn't get visited until backpropagation
         self.wi = 0
         self.uct_val = 0
-        self.children = dict()  # {move string version: TreeNode}
+        self.children = self._initialize_children()
+
+    def _initialize_children(self):
+        # returns a dictionary where the key is the move string and the value is the node
+        # initialize the children to be None
+        possible_moves = self.board.get_all_possible_moves(self.color)
+        children = {}
+        for i in range(len(possible_moves)):
+            for j in range(len(possible_moves[i])):
+                children[str(possible_moves[i][j])] = None
+        return children
 
     def backpropagation(self, win_for_parent):
         # recursively update Si and Wi for this node and parent
