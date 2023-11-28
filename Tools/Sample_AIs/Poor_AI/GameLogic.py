@@ -22,7 +22,7 @@ class GameLogic:
         move = Move([])
         board = Board(self.col,self.row,self.p)
         board.initialize_game()
-        board.show_board(fh)
+        # board.show_board(fh)
         while True:
             try:
                 move = self.ai_list[player-1].get_move(move)
@@ -45,7 +45,7 @@ class GameLogic:
                     winPlayer = 1
                 break
             winPlayer = board.is_win(player)
-            board.show_board(fh)
+            # board.show_board(fh)
             if(winPlayer != 0):
                 if self.mode == 'n':#Communate with peer to tell the result.
                     if player == 1:
