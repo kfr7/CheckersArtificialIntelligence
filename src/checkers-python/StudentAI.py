@@ -91,7 +91,7 @@ class StudentAI():
 
     def select_from_mcts(self):
         # for i in range(250):
-        for i in range(self.moves_done * 11):
+        for i in range(self.moves_done * 2):
             after_selection = self.selection()
             after_expansion = self.expansion(after_selection)
             self.simulate(after_expansion)
