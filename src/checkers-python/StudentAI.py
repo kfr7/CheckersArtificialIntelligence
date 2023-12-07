@@ -20,8 +20,10 @@ class StudentAI():
         self.opponent = {1:2,2:1}
         self.color = 2
         self.root = None
+        self.moves_done = 0
 
     def get_move(self,move):
+        self.moves_done += 1
         if len(move) != 0:
             # print("enters because other player already went but game board needs to be updated for this player")
             self.board.make_move(move,self.opponent[self.color])
@@ -88,7 +90,8 @@ class StudentAI():
             return white_score - black_score
 
     def select_from_mcts(self):
-        for i in range(250):
+        # for i in range(250):
+        for i in range(self.moves_done * 11):
             after_selection = self.selection()
             after_expansion = self.expansion(after_selection)
             self.simulate(after_expansion)
