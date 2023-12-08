@@ -4,7 +4,7 @@ from BoardClasses import Board
 import math
 import random
 from copy import deepcopy
-from time import time
+import time
 #The following part should be completed by students.
 #Students can modify anything except the class name and exisiting functions and varibles.
 EXPLORATION_CONSTANT = 1.414
@@ -90,15 +90,21 @@ class StudentAI():
             return white_score - black_score
 
     def select_from_mcts(self):
-        # for i in range(250):
+        # first check if there is only one move possible so no need to simulate
+        if len(self.root.children) == 1:
+            return Move.from_str(list(self.root.children.keys())[0])
+
+        # if there is more than one move possible, do MCTS
         if self.moves_done * 8 + 100 < 500:
             total_iteration = self.moves_done * 8 + 100
         else:
             total_iteration = 500
-        for i in range(total_iteration):
-            after_selection = self.selection()
-            after_expansion = self.expansion(after_selection)
-            self.simulate(after_expansion)
+        i = 0
+        start_time = time.time()
+        while i < total_iteration and time.time() - start_time < 5.5:
+            self.simulate(self.expansion(self.selection()))
+            i += 1
+
         best_move = self.best_move()
         return best_move
 
