@@ -3,11 +3,10 @@ from BoardClasses import Move
 from BoardClasses import Board
 import math
 import random
-from time import time
 from copy import deepcopy
+from time import time
 #The following part should be completed by students.
 #Students can modify anything except the class name and exisiting functions and varibles.
-
 EXPLORATION_CONSTANT = 1.414
 class StudentAI():
 
@@ -20,32 +19,38 @@ class StudentAI():
         self.color = ''
         self.opponent = {1:2,2:1}
         self.color = 2
+        self.root = None
+        self.moves_done = 0
+
     def get_move(self,move):
+        self.moves_done += 1
         if len(move) != 0:
+            # print("enters because other player already went but game board needs to be updated for this player")
             self.board.make_move(move,self.opponent[self.color])
+            if self.root is None:
+                # initialize the "root" with the initial state BEFORE OUR AI'S FIRST TURN
+                temp_board = deepcopy(self.board)
+                self.root = TreeNode(temp_board, self.color, None)
+            else:
+                # need to go down the tree to the node that corresponds to the move that the other player made
+                # and then set that node to be the root
+                self.root = self.root.children[str(move)]
+                if self.root is None:
+                    temp_board = deepcopy(self.board)
+                    self.root = TreeNode(temp_board, self.color, None)
         else:
+            # print("enters ONLY for first turn of game which means the color of this player is 1 / black")
             self.color = 1
-        # 2d array of moves
-        # moves = self.board.get_all_possible_moves(self.color) # comment this out later
-        # moves[first=the checker we decide to move][second=direction it moves]
-        # loop through all the elements of this moves array
-        # these elements are the direct children nodes
-        # print()
-        # print("(Before Possible Moves):", moves)
-        # print("Our AI's color:", self.color)
-        # print("About to execute min_max")
+            # initialize the "root" with the initial state BEFORE OUR AI'S FIRST TURN
+            temp_board = deepcopy(self.board)
+            self.root = TreeNode(temp_board, self.color, None)
+
         move = self.select_from_mcts()
-
-        # call a function that selects the best move from all possible moves
-        # based on the monte carlo tree search algorithm from this node
-
-
-        # make the move on the board
-        self.board.make_move(move,self.color)
+        self.root = self.root.children[str(move)]       # move the root to the node that corresponds to the best move
+        self.board.make_move(move, self.color)          # make the move on the actual board
         return move
 
-
-    def score(self):
+    def score(self, temp_color, temp_board):
         # Value of Kings = 300
         # Value of regulars = 100
         # Value of distance from king = (rows - curr_row / rows) * 100
@@ -64,174 +69,154 @@ class StudentAI():
         # this may take too long so maybe do the code above that is commented out
         for row in range(self.row):
             for col in range(self.col):
-                checker = self.board.board[row][col]
+                checker = temp_board.board[row][col]
                 if checker.color == 'W':
-                    white_score += 10 * ((self.col/2)**2 -(col - self.col/2)**2)
                     if checker.is_king:
                         white_score += 300
                     else:
                         white_score += 100
-                        white_score += ((self.row - row) / self.row) * 100
                 elif checker.color == 'B':
-                    black_score += 10 * ((self.col/2)**2 -(col - self.col/2)**2)
                     if checker.is_king:
                         black_score += 300
                     else:
                         black_score += 100
-                        black_score += (row / self.row) * 100
 
-        white_score += (self.board.white_count / (self.col * self.p / 2)) * 10
-        black_score += (self.board.black_count / (self.col * self.p / 2)) * 10
+        white_score += (temp_board.white_count / (self.col * self.p / 2)) * 10
+        black_score += (temp_board.black_count / (self.col * self.p / 2)) * 10
 
-        if self.color == 1:
+        if temp_color == 1:
             return black_score - white_score
         else:
             return white_score - black_score
 
     def select_from_mcts(self):
-        NUMBER_OF_SIMULATIONS = 1000
-        # we need from each call to c returned the win or loss (score based)
-        # and also this funtion will keep track of
-        # the number of simulations from each child node
-        all_possible_moves = self.board.get_all_possible_moves(self.color)
-        if len(all_possible_moves) == 1:
-            # print("Only had one move so don't simulate")
-            return all_possible_moves[0][0]
-        # all_possible_simulations is a 2d array with variable length rows and i want to
-        # initialize a 2 new 2d arrays with the same dimensions with
-        # 1. all zeroes to track of the number of simulations from each child node
-        # 2. with the average score of each child node
-        all_child_counts = []
-        all_child_score = []    # this will hold all the totals and then later on we will divide by the counts
-        for i in range(len(all_possible_moves)):
-            all_child_counts.append([])
-            all_child_score.append([])
-            for j in range(len(all_possible_moves[i])):
-                all_child_counts[i].append(0)
-                all_child_score[i].append(0)
-        for i in range(NUMBER_OF_SIMULATIONS):
-            simulate_start_move = self.rollout_policy()
-            # print(i)
-            # print(all_child_counts)
-            # print(all_child_score)
-            all_child_counts[simulate_start_move[0]][simulate_start_move[1]] += 1
-            # execute the move
-            self.board.make_move(all_possible_moves[simulate_start_move[0]][simulate_start_move[1]], self.color)
-            # then simulate the rest of the game
-            # and get the score of the game
-            all_child_score[simulate_start_move[0]][simulate_start_move[1]] += self.simulate(depth=1, max_depth=5) # since technically this was depth 0
-            self.board.undo()
-        # now we have all the scores and counts of each child node
-        for i in range(len(all_child_score)):
-            for j in range(len(all_child_score[i])):
-                if all_child_counts[i][j] != 0:
-                    all_child_score[i][j] = all_child_score[i][j] / all_child_counts[i][j]
-        # now we need to calculate the utc's for these base child nodes
-        # and return the best move
-        best_move = None
-        best_utc = -float("inf")
-        for i in range(len(all_child_score)):
-            for j in range(len(all_child_score[i])):
-                if all_child_counts[i][j] != 0:
-                    utc = self.uct_formula(all_child_score[i][j], all_child_counts[i][j], NUMBER_OF_SIMULATIONS)
-                    if utc > best_utc:
-                        best_utc = utc
-                        best_move = [i, j]
-        return all_possible_moves[best_move[0]][best_move[1]]
-
-    def simulate(self, depth, max_depth):
-        # print(depth, "Simulate function")
-        if self.board.is_win("W") != 0 or depth == max_depth:
-            # game is over
-            score = self.score()
-            # print(depth, "Entered if game over:", score)
-            return score
+        # for i in range(250):
+        if self.moves_done * 8 + 100 < 500:
+            total_iteration = self.moves_done * 8 + 100
         else:
-            # print(depth, "Entered else")
-            all_possible_values_from_here = self.board.get_all_possible_moves(self.color)
-            i, j = self.rollout_policy()
-            # print(depth, "going to do move", all_possible_values_from_here[random_row_array_i][random_move_j])
-            self.board.make_move(all_possible_values_from_here[i][j], self.color)
-            average_value_after = self.simulate(depth+1, max_depth)
-            # then undo the move
-            self.board.undo()
-            # print(depth, "undid the move", all_possible_values_from_here[random_row_array_i][random_move_j])
-            return average_value_after
+            total_iteration = 500
+        for i in range(total_iteration):
+            after_selection = self.selection()
+            after_expansion = self.expansion(after_selection)
+            self.simulate(after_expansion)
+        best_move = self.best_move()
+        return best_move
 
-    def rollout_policy(self, epsilon=0.2):
-        """
-        Picks moves for the rollout phase of MCTS
-        (can still be improved because right now uses static "score"
-        but might be better if we use the win numbers that we are
-        getting from the simulations)
-        """
-        all_possible_moves = self.board.get_all_possible_moves(self.color)
-        # explore: choose a random move
-        i = random.randint(0, len(all_possible_moves)-1)
-        j = random.randint(0, len(all_possible_moves[i])-1)
-        return [i, j]
-        # else: # was too biased towards the move with the highest score and treated
-        #       # all other moves the same even though some may have been better than others
-        #     # exploitation: choose the move with the highest score (just uses board score)
-        #     best_move = None
-        #     best_score = -float("inf")
-        #     for i in range(len(all_possible_moves)):
-        #         for j in range(len(all_possible_moves[i])):
-        #             self.board.make_move(all_possible_moves[i][j], self.color)
-        #             score_for_move = self.score()
-        #             if self.score() > best_score:
-        #                 best_score = score_for_move
-        #                 best_move = [i, j]
-        #             self.board.undo()
-        #     return best_move
-    def uct_formula(self,
-                    average_score,
-                    child_number_of_simulations,
-                    parent_number_of_simulations):
-        EXPLORATION_CONSTANT = 1.414
-        if child_number_of_simulations == 0:
-            return -float("inf")
-        return ((average_score / child_number_of_simulations) + (EXPLORATION_CONSTANT * math.sqrt(math.log(parent_number_of_simulations) / child_number_of_simulations)))
+    def selection(self):
+        '''Select nodes until it reaches a terminal node and return it or ...'''
+        current_node = self.root
+        while True:
+            # If it is a leaf node, return the node
+            if len(current_node.children) == 0:
+                return current_node
+            # Find the best child with the highest UCT value
+            best_child = None
+            highest_uct = 0
+            for move_str in current_node.children:
+                if current_node.children[move_str] is None:
+                    return current_node
+                elif best_child is None or current_node.children[move_str].uct_val >= highest_uct:
+                    best_child = current_node.children[move_str]
+                    highest_uct = current_node.children[move_str].uct_val
+            # Add the best child to the stack for further exploration
+            current_node = best_child
 
+    def expansion(self, node):
+        '''expand one node from node given'''
+        # If game is not ongoing, just return node
+        if node.board.is_win(self.opponent[node.color]) != 0:
+            return node
+        # expand node when we fild the child is None
+        for move_str, child in node.children.items():
+            move = Move.from_str(move_str)
+            if child is None:   # will always be a child that is None and if not, selection return leaf nodes with no children
+                temp_board = deepcopy(node.board)
+                temp_board.make_move(move, node.color)
+                node.children[move_str] = TreeNode(temp_board, self.opponent[node.color], node)
+                return node.children[move_str]
 
-    #TreeNode class to keep track of node of MCTS
-class TreeNode():
-    def __init__(self, board, color, move, parent):
-        self.board = deepcopy(board)
+    def simulate(self, node):
+        # Do simulation
+        simulation_count = 0
+        # win: 0 = ongoing, 1 = black, 2 = white, -1 = tie
+        win = node.board.is_win(self.opponent[node.color])
+        temp_board = deepcopy(node.board)
+        temp_color = node.color
+        # Iterate until there is winner or 500 times maximum
+        while simulation_count < 250 and win == 0:
+            temp_board.make_move(self.get_random_move(temp_color, temp_board), temp_color)
+            win = temp_board.is_win(temp_color)
+            # come back to this (the line below this may need to be at the top of the loop)
+            temp_color = self.opponent[temp_color]
+            simulation_count += 1
+
+        if win == self.opponent[node.color]:
+            win_for_parent = 1
+        elif win == node.color:
+            win_for_parent = -1
+        elif win == -1:     # tie
+            win_for_parent = 0  # win for neither
+        else:
+            if self.score(node.color, temp_board) > 0:
+                win_for_parent = -1
+            else:
+                win_for_parent = 1
+        # start backpropagation from the node we simulated from
+        node.backpropagation(win_for_parent)
+
+    def get_random_move(self, temp_color, temp_board):
+        '''Get random move for simulation and return it'''
+        possible_moves = temp_board.get_all_possible_moves(temp_color)
+        i = randint(0, len(possible_moves)-1)
+        j = randint(0, len(possible_moves[i])-1)
+        return possible_moves[i][j]
+
+    def best_move(self):
+        '''find best move according to the highest win rate of children which is calculated by wi / si'''
+        best_move_str = None
+        highest_win_rate = None
+        for move_str, child in self.root.children.items():
+            if child is not None and (highest_win_rate is None or child.wi / child.si > highest_win_rate):
+                best_move_str = move_str
+                highest_win_rate = child.wi / child.si
+        return Move.from_str(best_move_str)
+
+class TreeNode:
+    def __init__(self, board, color, parent):
+        # Assuming the board and player color that get passed in
+        # are already consistent (i.e. we shouldn't have to modify board on init)
+        self.board = board
         self.color = color
-        self.move = move
         self.parent = parent
         self.opponent = {1: 2, 2: 1}
+        self.si = 0 # doesn't get visited until backpropagation
+        self.wi = 0
+        self.uct_val = 0
+        self.children = self._initialize_children()
 
-        self.Si = 1
-        self.Wi = 0
-        self.UCT_val = 0
+    def _initialize_children(self):
+        # returns a dictionary where the key is the move string and the value is the node
+        # initialize the children to be None
+        possible_moves = self.board.get_all_possible_moves(self.color)
+        children = {}
+        for i in range(len(possible_moves)):
+            for j in range(len(possible_moves[i])):
+                children[str(possible_moves[i][j])] = None
+        return children
 
-        if move is not None:
-            self.board.make_move(move, self.opponent[self.color])
-
-        #Key is move and value is TreeNode of child
-        self.children = dict()
-        #game is ongoing
-        if self.board.is_win(self.opponent[self.color]) == 0:
-            possible_moves = self.board.get_all_possible_moves()
-            for i in range(len(possible_moves)):
-                for j in range(len(possible_moves)):
-                    self.children[possible_moves[i][j]] = None
-
-    def backpropagation(self, winForParent):
-        #recursively update Si and Wi for this node and parent
-        #winForParent = 1 is win for parent, -1 is lose
-        self.Si += 1
+    def backpropagation(self, win_for_parent):
+        # recursively update Si and Wi for this node and parent
+        # winForParent = 1 is win for parent, -1 is lose
+        self.si += 1
         # if it has parent
         if self.parent is not None:
-            self.parent.backpropagation(-winForParent)
-
-            if winForParent == 1:
-                self.Wi += 1
-
-        self.UTC_val = self.uct_formula(self.Wi, self.Si, self.parent.Si)
+            self.parent.backpropagation(-win_for_parent)
+            if win_for_parent == 1:
+                self.wi += 1
+            elif win_for_parent == -1:
+                self.wi -= 1    # doing this because the mcts tic tac toe demonstrations subtracts on losses
+            self.uct_val = self.uct_formula(self.wi, self.si, self.parent.si)
 
     def uct_formula(self, wi, si, sp):
-
         return (wi / si) + EXPLORATION_CONSTANT * math.sqrt(math.log(sp) / si)
+
