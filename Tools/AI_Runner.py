@@ -123,7 +123,7 @@ if __name__ == "__main__":
     elif mode == 'l':
         ai_path_1,ai_path_2 =  sys.argv[5],sys.argv[6]
         results = [0, 0, 0]
-        for i in range(10):
+        for i in range(100):
             main = GameLogic(col, row, k, mode, debug=True)
             start_time = time.time()
             result = main.Run(mode=mode, ai_path_1=ai_path_1, ai_path_2=ai_path_2, time=1200)
