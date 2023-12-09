@@ -8,7 +8,6 @@ We are following the javadoc docstring format which is:
 """
 import os
 import sys
-import time
 
 sys.path.append("./Sample_AIs/Random_AI/")
 sys.path.append("./Sample_AIs/Random_AI/AI_Extensions/")
@@ -122,17 +121,7 @@ if __name__ == "__main__":
 
     elif mode == 'l':
         ai_path_1,ai_path_2 =  sys.argv[5],sys.argv[6]
-        results = [0, 0, 0]
-        for i in range(100):
-            main = GameLogic(col, row, k, mode, debug=True)
-            start_time = time.time()
-            result = main.Run(mode=mode, ai_path_1=ai_path_1, ai_path_2=ai_path_2, time=1200)
-            print(time.time()-start_time)
-            if result == 1:
-                results[0] += 1
-            elif result == -1:
-                results[1] += 1
-            elif result == 2:
-                results[2] += 1
-        print("W T L")
-        print(results)
+        main = GameLogic(col, row, k, mode, debug=True)
+        result = main.Run(mode=mode, ai_path_1=ai_path_1, ai_path_2=ai_path_2, time=1200)
+
+
